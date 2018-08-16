@@ -4,11 +4,12 @@ body {
     margin: 0;
 }
 
-#container{
+.container {
     position: relative;
     background-color: #fff;
 }
-#sections{
+
+.sections {
     width: 30vw;
     padding-left: 20vw;
     color: black;
@@ -20,13 +21,18 @@ body {
     /*height: 300px;*/
     height: 100vh;
 }
-#sections > .trigger:last-child{
+
+.trigger.halfstep {
+    height : 50vh;
+}
+
+.sections > .trigger:last-child{
     margin-bottom: 30px;
 }
-#sections > div.graph-scroll-active{
+.sections > div.graph-scroll-active{
     opacity: 1;
 }
-#graph{
+.graph{
     width: 500px;
     position: -webkit-sticky;
     position: sticky;
@@ -35,7 +41,7 @@ body {
     transform: translate3d(0, 0, 0);
     height: 520px;
 }
-#graph svg {
+.graph svg {
     /*border: 1px dashed black;*/
     top: 50%;
     position: relative;
