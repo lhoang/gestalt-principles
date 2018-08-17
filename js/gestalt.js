@@ -34,6 +34,8 @@ class Gestalt {
 
         createSvg.call(this, '#container1', 'circles');
         createSvg.call(this, '#container2', 'shapes');
+        d3.select('#container2 .graph svg')
+            .append('g').classed('lines', true);
         this.closureShapes();
     }
 
@@ -136,8 +138,8 @@ class Gestalt {
              Z
             `;
 
-        const svg = d3.select('#container2 .graph .shapes');
-        svg.append('path')
+        const shapes = d3.select('#container2 .graph .shapes');
+        shapes.append('path')
             .attr('id', 'closure-triangle')
             .attr('stroke','black')
             .attr('fill','red')
@@ -146,7 +148,7 @@ class Gestalt {
             .attr('stroke-dasharray', '')
             .attr('d', triangle);
 
-        svg.append('circle')
+        shapes.append('circle')
             .attr('id', 'closure-circle')
             .attr('cx', x0 - c)
             .attr('cy', y0 - c)
@@ -158,7 +160,7 @@ class Gestalt {
             .attr('stroke-dasharray', '');
 
 
-        svg.append('path')
+        shapes.append('path')
             .attr('id', 'closure-square')
             .attr('stroke','black')
             .attr('fill','green')
@@ -167,18 +169,85 @@ class Gestalt {
             .attr('stroke-dasharray', '')
             .attr('d', square);
 
+
+
+        const line1a =  `M ${x0 - c * 2} ${y0 + c * 2}
+             Q ${x0 - c * 3 /2 } ${y0 - c * 3/2} 
+             ${x0} ${y0}
+            `;
+
+        const line1b =  `M ${x0} ${y0}
+             Q ${x0 + c * 3 /2 } ${y0 + c * 3/2} 
+             ${x0 + c * 2} ${y0 - c * 2}
+            `;
+
+        const line2a =  `M ${x0 - c * 2} ${y0 + c * 3/2}
+             L ${x0} ${y0}
+            `;
+
+        const line2b =  `M ${x0} ${y0}
+             L ${x0 + c * 2} ${y0 - c * 3/2}
+            `;
+
+        const lines = d3.select('#container2 .graph .lines');
+        lines.attr('opacity', '0');
+
+        lines.append('path')
+            .attr('id', 'line1a')
+            .classed('line1', true)
+            .attr('stroke','black')
+            .attr('stroke-width', 4)
+            .attr('fill','transparent')
+            .attr('d', line1a);
+        lines.append('path')
+            .attr('id', 'line1a')
+            .classed('line1', true)
+            .attr('stroke','red')
+            .attr('stroke-width', 4)
+            .attr('fill','transparent')
+            .attr('d', line1b);
+        lines.append('path')
+            .attr('id', 'line1a')
+            .classed('line2', true)
+            .attr('stroke','black')
+            .attr('stroke-width', 4)
+            .attr('fill','transparent')
+            .attr('d', line2a);
+        lines.append('path')
+            .attr('id', 'line1a')
+            .classed('line2', true)
+            .attr('stroke','red')
+            .attr('stroke-width', 4)
+            .attr('fill','transparent')
+            .attr('d', line2b);
+
+
+        // comportement pour line1 et line2
+        function hoverLine(line) {
+            lines.selectAll(line)
+                .on('mouseover', () =>
+                    d3.selectAll(line).classed('line-hover', true),
+                )
+                .on('mouseout', () =>
+                    d3.selectAll(line).classed('line-hover', false),
+                );
+        }
+        hoverLine('.line1');
+        hoverLine('.line2');
     }
 
     /**
      * Closure part 1.
      */
     closure1() {
-        const c = 80;
         const t1 = d3.transition().duration(3000);
         const t2 = d3.transition().duration(2000);
+        const lines = d3.select('#container2 .graph .lines');
+        lines.attr('opacity', '0');
 
-        const svg = d3.select('#container2 .graph .shapes');
-        svg.select('#closure-triangle')
+        const shapes = d3.select('#container2 .graph .shapes');
+        shapes.attr('opacity', '1');
+        shapes.select('#closure-triangle')
             .transition(t1)
             .attr('fill-opacity', 1)
             .attr('transform', 'translate(0, 0)')
@@ -186,14 +255,14 @@ class Gestalt {
             .attr('stroke-dasharray', '')
             ;
 
-        svg.select('#closure-circle')
+        shapes.select('#closure-circle')
             .transition(t1)
             .attr('fill-opacity', 1)
             .attr('transform', 'translate(0, 0)')
             .transition(t2)
             .attr('stroke-dasharray', '');
 
-        svg.select('#closure-square')
+        shapes.select('#closure-square')
             .transition(t1)
             .attr('fill-opacity', 1)
             .attr('transform', 'translate(0, 0)')
@@ -207,31 +276,50 @@ class Gestalt {
      */
     closure2() {
         const c = 80;
+        const t0 = d3.transition().duration(1000);
         const t1 = d3.transition().duration(3000);
         const t2 = d3.transition().duration(2000);
 
-        const svg = d3.select('#container2 .graph .shapes');
-        svg.select('#closure-triangle')
+        const lines = d3.select('#container2 .graph .lines');
+        lines.transition(t0)
+            .attr('opacity', '0');
+
+        const shapes = d3.select('#container2 .graph .shapes');
+        shapes.transition(t0)
+            .attr('opacity', '1');
+        shapes.select('#closure-triangle')
             .transition(t1)
             .attr('fill-opacity', 0)
             .attr('transform', 'translate(50, -50)')
             .transition(t2)
             .attr('stroke-dasharray', '40 100 100 100 100 100');
 
-        svg.select('#closure-circle')
+        shapes.select('#closure-circle')
             .transition(t1)
             .attr('fill-opacity', 0)
             .attr('transform', 'translate(-50, -50)')
             .transition(t2)
             .attr('stroke-dasharray', c);
 
-        svg.select('#closure-square')
+        shapes.select('#closure-square')
             .transition(t1)
             .attr('fill-opacity', 0)
             .attr('transform', 'translate(0, 50)')
             .transition(t2)
             .attr('stroke-dasharray', c);
 
+    }
+
+    continuity() {
+        const t0 = d3.transition().duration(1000);
+
+        const shapes = d3.select('#container2 .graph .shapes');
+        shapes.transition(t0)
+            .attr('opacity', '0');
+
+        const lines = d3.select('#container2 .graph .lines');
+        lines.transition(t0)
+            .attr('opacity', 1);
     }
 
 

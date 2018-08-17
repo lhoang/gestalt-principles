@@ -5,6 +5,7 @@
     <title>Gestalt Principles</title>
     <meta charset="utf-8">
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <!--<script src="offline/d3.v5.min.js"></script>-->
     <script src="js/gestalt.js"></script>
     <script src="lib/graph-scroll.js"></script>
     <link href="css/scroll.css" rel="stylesheet" type="text/css"/>
@@ -41,6 +42,9 @@
         </div>
         <div class="trigger halfstep">
             <h3>Closure 2</h3>
+        </div>
+        <div class="trigger">
+            <h3>Continuity</h3>
         </div>
     </div>
 </div>
@@ -89,6 +93,9 @@
                         break;
                     case 1:
                         main.closure2();
+                        break;
+                    case 2:
+                        main.continuity();
                         break;
                     default:
                         main.display(i);

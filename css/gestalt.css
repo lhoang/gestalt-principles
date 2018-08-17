@@ -11,3 +11,8 @@ text {
     font-weight: bold;
     text-anchor: middle;
 }
+
+.line-hover {
+    stroke : steelblue;
+    stroke-width: 8;
+}
