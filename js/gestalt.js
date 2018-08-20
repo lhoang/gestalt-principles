@@ -7,13 +7,15 @@ class Gestalt {
         this.offsetX = Math.floor(this.interval);
         this.offsetY = Math.floor(this.interval);
         this.data = [
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
+            {id: 'c0'}, {id: 'c1'}, {id: 'c2'}, {id: 'c3'},
+            {id: 'c4'}, {id: 'c5'}, {id: 'c6'}, {id: 'c7'},
+            {id: 'c8'}, {id: 'c9'}, {id: 'c10'}, {id: 'c11'},
+            {id: 'c12'}, {id: 'c13'}, {id: 'c14'}, {id: 'c15'},
         ];
         // TODO
         this.bigRadius = Math.floor(Math.min(width, height) * .3);
+
+        this.simulation = null;
 
         this.initGraphs();
     }
@@ -43,6 +45,9 @@ class Gestalt {
      * Initialisation.
      */
     init() {
+        // nettoyage
+        d3.selectAll('#container1 .link').remove();
+
         // Join
         const circles = d3.select('#container1 .circles')
             .selectAll('.circle')
@@ -114,17 +119,133 @@ class Gestalt {
         // TODO : remplacer les circle par des rect ?
     }
 
+    /**
+     * Connectivity.
+     */
+    connectivity() {
+        const svg = d3.select('#container1 svg');
+
+        this.simulation = d3.forceSimulation()
+            .nodes(this.data)
+            .stop();
+
+        const circles = d3.selectAll('#container1 .circle');
+        // Position initiale fixée
+        circles.each((d, i, nodes) => {
+            const circle = d3.select(nodes[i]);
+            this.data[i].fx = +circle.attr('cx');
+            this.data[i].fy = +circle.attr('cy');
+        });
+
+        // création des liens au hasard
+        let ids = [...Array(this.data.length).keys()];
+        const nbGroups = 3;
+
+        const parents = [];
+        for (let i = 0; i < nbGroups; i++) {
+            const idx = Math.floor(Math.random() * (ids.length));
+            const selected = ids.splice(idx, 1);
+            parents.push(selected);
+            const children = [];
+            for (let j = 0; j < Math.ceil(Math.random() * 4) + 1; j++) {
+                const idx = Math.floor(Math.random() * (ids.length));
+                const selectedChild = ids.splice(idx, 1);
+                children.push(...selectedChild);
+            }
+            parents[i].push(...children);
+        }
+        const linksData = parents
+            .filter(each => each.length > 0)
+            .map(group => {
+                const parent = group.shift();
+                return group.map(g => {
+                    return {'source': parent, 'target': g};
+                });
+            }).reduce((a, val) => a.concat(val), []);
+
+
+        // Ajout des forces
+        const sim = this.simulation
+            .force('links', d3.forceLink()
+                .distance(this.radius * 2)
+                .strength(1),
+            )
+            .force('collide', d3.forceCollide(d => d.r * 4))
+            .force('charge', d3.forceManyBody().strength(-150))
+            .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+            .force('y', d3.forceY(0))
+            .force('x', d3.forceX(0))
+        ;
+
+        circles.transition().duration(1000)
+            .attr('fill', 'rgb(31, 119, 180)');
+        circles.call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended));
+
+
+        // Comportement Drag
+        function dragstarted(d) {
+            // annulation de la position fixe
+            sim.nodes().forEach(node => {
+                node.fx = null;
+                node.fy = null;
+            });
+            if (!d3.event.active) sim.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+            d.x = d.fx;
+            d.y = d.fy;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) sim.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+
+        const links = svg.selectAll('.link')
+            .data(linksData)
+            .enter().append('line')
+            .attr('class', 'link');
+
+        const ticked = () => {
+            circles.attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+
+            links.attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+        };
+
+        this.simulation.on('tick', ticked)
+            .restart();
+
+        this.simulation
+            .force('links')
+            .links(linksData);
+
+    }
+
 
     /**
      * Initialisation des formes pour la partie 2.
      */
     closureShapes() {
-        const x0 = Math.floor(this.width/2);
-        const y0 = Math.floor(this.height/2);
+        const x0 = Math.floor(this.width / 2);
+        const y0 = Math.floor(this.height / 2);
         const c = 80;
         const square =
-            `M ${x0 - c}, ${y0 - c/2}
-             v ${-c /2}
+            `M ${x0 - c}, ${y0 - c / 2}
+             v ${-c / 2}
              h ${c * 2}         
              v ${c * 2}         
              h ${-c * 2} 
@@ -132,8 +253,8 @@ class Gestalt {
         `;
 
         const triangle =
-            `M ${x0 + c/2}, ${y0 - c * 2}
-             L ${x0 + c * 7/4}, ${y0}
+            `M ${x0 + c / 2}, ${y0 - c * 2}
+             L ${x0 + c * 7 / 4}, ${y0}
              h ${-c * 2.5}
              Z
             `;
@@ -141,8 +262,8 @@ class Gestalt {
         const shapes = d3.select('#container2 .graph .shapes');
         shapes.append('path')
             .attr('id', 'closure-triangle')
-            .attr('stroke','black')
-            .attr('fill','red')
+            .attr('stroke', 'black')
+            .attr('fill', 'red')
             .attr('stroke-width', 4)
             .attr('fill-opacity', 1)
             .attr('stroke-dasharray', '')
@@ -153,8 +274,8 @@ class Gestalt {
             .attr('cx', x0 - c)
             .attr('cy', y0 - c)
             .attr('r', c)
-            .attr('stroke','black')
-            .attr('fill','yellow')
+            .attr('stroke', 'black')
+            .attr('fill', 'yellow')
             .attr('stroke-width', 4)
             .attr('fill-opacity', 1)
             .attr('stroke-dasharray', '');
@@ -162,31 +283,30 @@ class Gestalt {
 
         shapes.append('path')
             .attr('id', 'closure-square')
-            .attr('stroke','black')
-            .attr('fill','green')
+            .attr('stroke', 'black')
+            .attr('fill', 'green')
             .attr('stroke-width', 4)
             .attr('fill-opacity', 1)
             .attr('stroke-dasharray', '')
             .attr('d', square);
 
 
-
-        const line1a =  `M ${x0 - c * 2} ${y0 + c * 2}
-             Q ${x0 - c * 3 /2 } ${y0 - c * 3/2} 
+        const line1a = `M ${x0 - c * 2} ${y0 + c * 2}
+             Q ${x0 - c * 3 / 2 } ${y0 - c * 3 / 2} 
              ${x0} ${y0}
             `;
 
-        const line1b =  `M ${x0} ${y0}
-             Q ${x0 + c * 3 /2 } ${y0 + c * 3/2} 
+        const line1b = `M ${x0} ${y0}
+             Q ${x0 + c * 3 / 2 } ${y0 + c * 3 / 2} 
              ${x0 + c * 2} ${y0 - c * 2}
             `;
 
-        const line2a =  `M ${x0 - c * 2} ${y0 + c * 3/2}
+        const line2a = `M ${x0 - c * 2} ${y0 + c * 3 / 2}
              L ${x0} ${y0}
             `;
 
-        const line2b =  `M ${x0} ${y0}
-             L ${x0 + c * 2} ${y0 - c * 3/2}
+        const line2b = `M ${x0} ${y0}
+             L ${x0 + c * 2} ${y0 - c * 3 / 2}
             `;
 
         const lines = d3.select('#container2 .graph .lines');
@@ -195,30 +315,30 @@ class Gestalt {
         lines.append('path')
             .attr('id', 'line1a')
             .classed('line1', true)
-            .attr('stroke','black')
+            .attr('stroke', 'black')
             .attr('stroke-width', 4)
-            .attr('fill','transparent')
+            .attr('fill', 'transparent')
             .attr('d', line1a);
         lines.append('path')
             .attr('id', 'line1a')
             .classed('line1', true)
-            .attr('stroke','red')
+            .attr('stroke', 'red')
             .attr('stroke-width', 4)
-            .attr('fill','transparent')
+            .attr('fill', 'transparent')
             .attr('d', line1b);
         lines.append('path')
             .attr('id', 'line1a')
             .classed('line2', true)
-            .attr('stroke','black')
+            .attr('stroke', 'black')
             .attr('stroke-width', 4)
-            .attr('fill','transparent')
+            .attr('fill', 'transparent')
             .attr('d', line2a);
         lines.append('path')
             .attr('id', 'line1a')
             .classed('line2', true)
-            .attr('stroke','red')
+            .attr('stroke', 'red')
             .attr('stroke-width', 4)
-            .attr('fill','transparent')
+            .attr('fill', 'transparent')
             .attr('d', line2b);
 
 
@@ -232,6 +352,7 @@ class Gestalt {
                     d3.selectAll(line).classed('line-hover', false),
                 );
         }
+
         hoverLine('.line1');
         hoverLine('.line2');
     }
@@ -253,7 +374,7 @@ class Gestalt {
             .attr('transform', 'translate(0, 0)')
             .transition(t2)
             .attr('stroke-dasharray', '')
-            ;
+        ;
 
         shapes.select('#closure-circle')
             .transition(t1)
@@ -310,6 +431,9 @@ class Gestalt {
 
     }
 
+    /**
+     * Continuity.
+     */
     continuity() {
         const t0 = d3.transition().duration(1000);
 

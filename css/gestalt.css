@@ -5,7 +5,6 @@
     stroke-width: 1px;
 }
 
-
 text {
     font: 15px sans-serif;
     font-weight: bold;
@@ -13,6 +12,11 @@ text {
 }
 
 .line-hover {
-    stroke : steelblue;
-    stroke-width: 8;
+    stroke: steelblue;
+    stroke-width: 8px;
+}
+
+line.link {
+    stroke: steelblue;
+    stroke-width: 2px;
 }
