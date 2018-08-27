@@ -7,10 +7,16 @@ class Gestalt {
         this.offsetX = Math.floor(this.interval);
         this.offsetY = Math.floor(this.interval);
         this.data = [
-            {id: 'c0'}, {id: 'c1'}, {id: 'c2'}, {id: 'c3'},
-            {id: 'c4'}, {id: 'c5'}, {id: 'c6'}, {id: 'c7'},
-            {id: 'c8'}, {id: 'c9'}, {id: 'c10'}, {id: 'c11'},
-            {id: 'c12'}, {id: 'c13'}, {id: 'c14'}, {id: 'c15'},
+            {id: 'c0', angle: -60, dx: -30},
+            {id: 'c1', angle: -50, dx: -20},
+            {id: 'c2', angle: 50, dx: 20},
+            {id: 'c3', angle: 60, dx: 30},
+            {id: 'c4', angle: -50, dx: -15},
+            {id: 'c5', angle: -45, dx: -5},
+            {id: 'c6', angle: 35, dx: 5},
+            {id: 'c7', angle: 45, dx: 15},
+            {id: 'c8', angle: -30}, {id: 'c9', angle: -20}, {id: 'c10', angle: 20}, {id: 'c11', angle: 30},
+            {id: 'c12', angle: 0}, {id: 'c13', angle: 0}, {id: 'c14', angle: 0}, {id: 'c15', angle: 0},
         ];
         // TODO
         this.bigRadius = Math.floor(Math.min(width, height) * .3);
@@ -39,6 +45,30 @@ class Gestalt {
         d3.select('#container2 .graph svg')
             .append('g').classed('lines', true);
         this.closureShapes();
+
+
+        // pattern
+        const triangle =
+            `M 0.5, 0
+            L .85, .85
+            L .5, .5
+            L .15, .85
+            Z
+            `;
+
+        const c1 = d3.select('#container1 svg');
+        c1.append('defs')
+            .append('pattern')
+            .attr('id', 'arrowPattern')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', 1)
+            .attr('height', 1)
+            .attr('patternContentUnits', 'objectBoundingBox')
+            .append('path')
+            .attr('fill', 'green')
+            .attr('d', triangle);
+
     }
 
     /**
@@ -46,6 +76,10 @@ class Gestalt {
      */
     init() {
         // nettoyage
+        if (this.simulation) {
+            this.simulation.stop();
+        }
+        ;
         d3.selectAll('#container1 .link').remove();
 
         // Join
@@ -54,22 +88,36 @@ class Gestalt {
             .data(this.data);
         const t = d3.transition().duration(2000);
 
+        circles.on('mousedown.drag', null);
+
         // Update
         circles.transition(t)
-            .attr('r', this.radius)
-            .attr('cx', (d, i) => this.offsetX + (i % 4) * this.interval)
-            .attr('cy', (d, i) => this.offsetY + Math.floor(i / 4) * this.interval)
-            .attr('fill', 'rgb(31, 119, 180)')
-            .attr('class', 'circle');
+            .attr('transform', (d, i) => {
+                const x = this.offsetX + (i % 4) * this.interval;
+                const y = this.offsetY + Math.floor(i / 4) * this.interval;
+                return `translate(${x}, ${y})`;
+            })
+            .selectAll('circle')
+            .attr('fill', 'rgb(31, 119, 180)');
 
         // Enter
         circles.enter()
+            .append('g')
+            .attr('class', 'circle')
+            .attr('transform', (d, i) => {
+                const x = this.offsetX + (i % 4) * this.interval;
+                const y = this.offsetY + Math.floor(i / 4) * this.interval;
+                return `translate(${x}, ${y})`;
+            })
+            .attr('x', (d, i) => this.offsetX + (i % 4) * this.interval)
+            .attr('y', (d, i) => this.offsetY + Math.floor(i / 4) * this.interval)
             .append('circle')
             .attr('r', 0)
-            .attr('cx', (d, i) => this.offsetX + (i % 4) * this.interval)
-            .attr('cy', (d, i) => this.offsetY + Math.floor(i / 4) * this.interval)
-            .attr('class', 'circle')
+            //.attr('cx', (d, i) => this.offsetX + (i % 4) * this.interval)
+            //.attr('cy', (d, i) => this.offsetY + Math.floor(i / 4) * this.interval)
+            //.attr('class', 'circle')
             .attr('fill', 'rgb(31, 119, 180)')
+            .attr('transform', null)
             .transition(t)
             .attr('r', this.radius);
     }
@@ -83,25 +131,23 @@ class Gestalt {
         const t = d3.transition().duration(2000);
 
         const circles = d3.select('#container1 .circles')
-            .selectAll('.circle')
-            .transition(t)
-            .attr('cx', (d, i) => {
+            .selectAll('.circle');
+        circles.transition(t)
+            .attr('transform', (d, i) => {
                 let modulo = (i % 4);
-                let result = this.offsetX + modulo * newInterval;
+                let x = this.offsetX + modulo * newInterval;
                 if (modulo > 1) {
-                    result += divide;
+                    x += divide;
                 }
-                return result;
-            })
-            .attr('cy', (d, i) => {
-                let result = this.offsetY + Math.floor(i / 4) * newInterval;
-                if (i > 7) {
-                    result += divide;
-                }
-                return result;
 
-            })
-            .attr('class', 'circle');
+                let y = this.offsetY + Math.floor(i / 4) * newInterval;
+                if (i > 7) {
+                    y += divide;
+                }
+                return `translate(${x}, ${y})`;
+            });
+        circles.selectAll('circle')
+            .attr('fill', 'rgb(31, 119, 180)');
     }
 
     /**
@@ -112,11 +158,10 @@ class Gestalt {
         const t = d3.transition().duration(1000);
 
         const circles = d3.select('#container1 .circles')
-            .selectAll('.circle')
+            .selectAll('circle')
             .transition(t).delay(2000)
             .attr('fill', (d, i) => (i > 7) ? 'red' : 'rgb(31, 119, 180)');
 
-        // TODO : remplacer les circle par des rect ?
     }
 
     /**
@@ -133,9 +178,10 @@ class Gestalt {
         // Position initiale fixée
         circles.each((d, i, nodes) => {
             const circle = d3.select(nodes[i]);
-            this.data[i].fx = +circle.attr('cx');
-            this.data[i].fy = +circle.attr('cy');
+            this.data[i].fx = +circle.attr('x');
+            this.data[i].fy = +circle.attr('y');
         });
+
 
         // création des liens au hasard
         let ids = [...Array(this.data.length).keys()];
@@ -154,6 +200,7 @@ class Gestalt {
             }
             parents[i].push(...children);
         }
+
         const linksData = parents
             .filter(each => each.length > 0)
             .map(group => {
@@ -177,16 +224,12 @@ class Gestalt {
             .force('x', d3.forceX(0))
         ;
 
-        circles.transition().duration(1000)
+        circles.selectAll('circle')
+            .transition().duration(1000)
             .attr('fill', 'rgb(31, 119, 180)');
-        circles.call(d3.drag()
-            .on('start', dragstarted)
-            .on('drag', dragged)
-            .on('end', dragended));
-
 
         // Comportement Drag
-        function dragstarted(d) {
+        const dragstarted = (d) => {
             // annulation de la position fixe
             sim.nodes().forEach(node => {
                 node.fx = null;
@@ -195,20 +238,28 @@ class Gestalt {
             if (!d3.event.active) sim.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
-        }
+            d.x0 = d.x;
+            d.y0 = d.y;
+        };
 
-        function dragged(d) {
+        const dragged = d => {
             d.fx = d3.event.x;
             d.fy = d3.event.y;
             d.x = d.fx;
             d.y = d.fy;
-        }
 
-        function dragended(d) {
+        };
+
+        const dragended = d => {
             if (!d3.event.active) sim.alphaTarget(0);
             d.fx = null;
             d.fy = null;
-        }
+        };
+
+        circles.call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended));
 
 
         const links = svg.selectAll('.link')
@@ -217,8 +268,7 @@ class Gestalt {
             .attr('class', 'link');
 
         const ticked = () => {
-            circles.attr('cx', d => d.x)
-                .attr('cy', d => d.y);
+            circles.attr('transform', d => `translate(${d.x}, ${d.y})`);
 
             links.attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
@@ -235,6 +285,28 @@ class Gestalt {
 
     }
 
+    /**
+     * Common destiny.
+     */
+    commonDestiny() {
+        this.init();
+        const t = d3.transition().duration(2000);
+
+        const circles = d3.select('#container1 .circles')
+            .selectAll('.circle')
+            .transition(t)
+            .attr('transform', (d, i) => {
+                const x = this.offsetX + (i % 4) * this.interval + (d.dx || 0);
+                const y = this.offsetY + Math.floor(i / 4) * this.interval;
+                return `translate(${x}, ${y})`;
+            });
+
+        circles.selectAll('circle')
+            .transition(t)
+            .attr('fill', 'url(#arrowPattern)')
+            .attr('transform', d => `rotate(${d.angle})`);
+
+    }
 
     /**
      * Initialisation des formes pour la partie 2.
